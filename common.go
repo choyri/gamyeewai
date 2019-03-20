@@ -72,7 +72,6 @@ func sendDingtalkAlarm(data *requestData) {
 	}
 
 	content += kibanaLink
-	println(content)
 
 	Dingtalk.WithSilence().Send(map[string]interface{}{
 		"msgtype": "markdown",
