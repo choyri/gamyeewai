@@ -1,16 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"github.com/choyri/gamyeewai"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/kataras/iris"
 	"net/http"
 )
 
 func main() {
-	dingtalkTest()
-	ginTest()
-	logTest()
+	fmt.Println("Hello world.")
+	//dingtalkTest()
+	//ginTest()
+	//irisTest()
+	//logTest()
 }
 
 func dingtalkTest() {
@@ -35,8 +39,12 @@ func ginTest() {
 		panic("手动抛出一个错误")
 	})
 
+	r.POST("/panic", func(c *gin.Context) {
+		panic("手动抛出一个错误")
+	})
+
 	r.GET("/token", func(c *gin.Context) {
-		token, err := gamyeewai.Gin.GetToken()
+		token, err := gamyeewai.Gin.With(c).GetToken()
 		if err != nil {
 			c.String(http.StatusBadRequest, err.Error())
 		} else {
@@ -45,6 +53,35 @@ func ginTest() {
 	})
 
 	_ = r.Run()
+}
+
+func irisTest() {
+	app := iris.Default()
+
+	app.Use(gamyeewai.Iris.ErrorHandle())
+
+	app.Get("/panic", func(ctx iris.Context) {
+		panic("手动抛出一个错误")
+	})
+
+	app.Post("/panic", func(ctx iris.Context) {
+		panic("手动抛出一个错误")
+	})
+
+	app.Get("/token", func(ctx iris.Context) {
+		token, err := gamyeewai.Iris.With(ctx).GetToken()
+		if err != nil {
+			ctx.StatusCode(http.StatusBadRequest)
+			_, _ = ctx.WriteString(err.Error())
+			return
+		}
+
+		_, _ = ctx.JSON(iris.Map{
+			"token": token,
+		})
+	})
+
+	_ = app.Run(iris.Addr(":8088"))
 }
 
 func logTest() {

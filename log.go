@@ -5,7 +5,7 @@ import (
 	"github.com/rs/zerolog"
 	"os"
 	"reflect"
-	"runtime"
+	"sync"
 	"time"
 )
 
@@ -13,12 +13,21 @@ type logstashHook struct{}
 
 type logEntry struct {
 	*zerolog.Logger
-	withGin bool
+	sync.Mutex
+	requestData *requestData
 }
 
-var l = zerolog.New(os.Stderr).With().Timestamp().Logger().Hook(logstashHook{})
+var (
+	l   = zerolog.New(os.Stderr).With().Timestamp().Logger().Hook(logstashHook{})
+	Log = logEntry{Logger: &l}
+)
 
-var Log = logEntry{&l, false}
+func (e *logEntry) WithRequestData(data *requestData) *logEntry {
+	e.Lock()
+	e.requestData = data
+	e.Unlock()
+	return e
+}
 
 func (h logstashHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	e.Str("@version", "1").
@@ -31,21 +40,15 @@ func (h logstashHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 		return
 	}
 
-	trace := make([]byte, 2048)
-	trace = trace[:runtime.Stack(trace, true)]
-	e.Str("trace", string(trace))
+	Log.Lock()
 
-	if !Log.withGin || Gin.Context == nil {
+	if Log.requestData == nil {
+		Log.Unlock()
 		return
 	}
 
-	// 用完后改回默认值
-	Log.withGin = false
-
-	requestData := Gin.parseRequest()
-
-	key := reflect.TypeOf(requestData)
-	value := reflect.ValueOf(requestData)
+	key := reflect.TypeOf(*Log.requestData)
+	value := reflect.ValueOf(*Log.requestData)
 
 	for i := 0; i < key.NumField(); i++ {
 		if key.Field(i).Name == "Message" {
@@ -53,9 +56,6 @@ func (h logstashHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 		}
 		e.Str(key.Field(i).Tag.Get("json"), fmt.Sprintf("%v", value.Field(i).Interface()))
 	}
-}
 
-func (e *logEntry) WithGin() *logEntry {
-	e.withGin = true
-	return e
+	Log.Unlock()
 }
