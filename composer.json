@@ -1,0 +1,37 @@
+{
+    "name": "choyri/gamyeewai",
+    "description": "我是一个没有感情的锦衣卫。",
+    "license": "WTFPL",
+    "authors": [
+        {
+            "name": "choyri",
+            "email": "i@choyri.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "ext-json": "*",
+        "firebase/php-jwt": "^5.0",
+        "guzzlehttp/guzzle": "^6.0",
+        "illuminate/container": "^5.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Choyri\\Gamyeewai\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Choyri\\Gamyeewai\\ServiceProvider"
+            ],
+            "aliases": {
+                "Gamyeewai": "Choyri\\Gamyeewai\\Gamyeewai"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
